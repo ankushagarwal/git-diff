@@ -394,6 +394,7 @@ function getInitialRepositoryState(): IRepositoryState {
       },
     },
     selectedSection: RepositorySectionTab.Changes,
+    isDiffLoading: false,
     branchesState: {
       tip: { kind: TipState.Unknown },
       defaultBranch: null,

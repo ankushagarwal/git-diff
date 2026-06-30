@@ -544,6 +544,7 @@ export interface IRepositoryState {
   readonly changesState: IChangesState
   readonly compareState: ICompareState
   readonly selectedSection: RepositorySectionTab
+  readonly isDiffLoading: boolean
 
   /**
    * The state of the current pull request view in the repository.

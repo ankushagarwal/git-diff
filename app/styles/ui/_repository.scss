@@ -17,6 +17,16 @@
     gap: var(--spacing);
   }
 
+  .diff-loading-panel {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 0;
+    color: var(--text-secondary-color);
+  }
+
   &-sidebar {
     display: flex;
     flex-direction: column;

@@ -1,17 +1,17 @@
 {
   "fill" : {
     "linear-gradient" : [
-      "display-p3:0.56772,0.25840,0.76000,1.00000",
-      "srgb:0.35121,0.06360,0.53000,1.00000"
+      "srgb:0.18039,0.64314,0.30588,1.00000",
+      "srgb:0.81176,0.13333,0.18039,1.00000"
     ],
     "orientation" : {
       "start" : {
-        "x" : 0.5,
-        "y" : 0
+        "x" : 0,
+        "y" : 0.5
       },
       "stop" : {
-        "x" : 0.5,
-        "y" : 0.7
+        "x" : 1,
+        "y" : 0.5
       }
     }
   },
@@ -43,6 +43,24 @@
       },
       "translucency" : {
         "enabled" : true,
+        "value" : 0.5
+      }
+    },
+    {
+      "layers" : [
+        {
+          "image-name" : "split-background.svg",
+          "name" : "split-background"
+        }
+      ],
+      "name" : "background",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : false,
         "value" : 0.5
       }
     }

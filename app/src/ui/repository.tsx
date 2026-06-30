@@ -8,6 +8,7 @@ import { NoChanges } from './changes/no-changes'
 import { MultipleSelection } from './changes/multiple-selection'
 import { FilesChangedBadge } from './changes/files-changed-badge'
 import { SelectedCommits } from './history'
+import { FileList } from './history/file-list'
 import { Resizable } from './resizable'
 import { TabBar } from './tab-bar'
 import {
@@ -23,6 +24,7 @@ import { assertNever } from '../lib/fatal-error'
 import { Account } from '../models/account'
 import { FocusContainer } from './lib/focus-container'
 import { ImageDiffType } from '../models/diff'
+import { CommittedFileChange } from '../models/status'
 import { IMenu } from '../models/app-menu'
 import { StashDiffViewer } from './stashing'
 import { StashedChangesLoadStates } from '../models/stash-entry'
@@ -36,6 +38,7 @@ import { PullRequestSuggestedNextAction } from '../models/pull-request'
 import { clamp } from '../lib/clamp'
 import { Emoji } from '../lib/emoji'
 import { PopupType } from '../models/popup'
+import { Loading } from './lib/loading'
 
 interface IRepositoryViewProps {
   readonly repository: Repository
@@ -291,9 +294,51 @@ export class RepositoryView extends React.Component<
     )
   }
 
-  private renderHiddenHistorySidebar(): JSX.Element {
+  private onHistoryFileSelected = (file: CommittedFileChange) => {
+    this.props.dispatcher.changeFileSelection(this.props.repository, file)
+  }
+
+  private onHistoryFileRowDoubleClick = (row: number) => {
+    const files = this.props.state.commitSelection.changesetData.files
+    const file = files[row]
+
+    this.props.onOpenInExternalEditor(file.path)
+  }
+
+  private renderHistoryFileHeader(fileCount: number) {
+    const filesPlural = fileCount === 1 ? 'file' : 'files'
+
     return (
-      <div className="panel" role="tabpanel" aria-labelledby="changes-tab" />
+      <div className="file-list-header">
+        {fileCount} changed {filesPlural}
+      </div>
+    )
+  }
+
+  private renderHistorySidebar(): JSX.Element {
+    const { changesetData, file } = this.props.state.commitSelection
+    const files = changesetData.files
+    const availableWidth = clamp(this.props.sidebarWidth) - 1
+
+    return (
+      <div
+        className="panel history-files-sidebar"
+        role="tabpanel"
+        aria-labelledby="changes-tab"
+      >
+        {this.renderHistoryFileHeader(files.length)}
+        {files.length === 0 ? (
+          <div className="fill-window">No files in commit</div>
+        ) : (
+          <FileList
+            files={files}
+            onSelectedFileChanged={this.onHistoryFileSelected}
+            selectedFile={file}
+            availableWidth={availableWidth}
+            onRowDoubleClick={this.onHistoryFileRowDoubleClick}
+          />
+        )}
+      </div>
     )
   }
 
@@ -303,7 +348,7 @@ export class RepositoryView extends React.Component<
     if (selectedSection === RepositorySectionTab.Changes) {
       return this.renderChangesSidebar()
     } else if (selectedSection === RepositorySectionTab.History) {
-      return this.renderHiddenHistorySidebar()
+      return this.renderHistorySidebar()
     } else {
       return assertNever(selectedSection, 'Unknown repository section')
     }
@@ -430,6 +475,7 @@ export class RepositoryView extends React.Component<
         onDiffOptionsOpened={this.onDiffOptionsOpened}
         showDragOverlay={showDragOverlay}
         accounts={this.props.accounts}
+        showFileList={false}
       />
     )
   }
@@ -545,6 +591,14 @@ export class RepositoryView extends React.Component<
   }
 
   private renderContent(): JSX.Element | null {
+    if (this.props.state.isDiffLoading) {
+      return (
+        <div className="diff-loading-panel">
+          <Loading />
+        </div>
+      )
+    }
+
     const selectedSection = this.props.state.selectedSection
     if (selectedSection === RepositorySectionTab.Changes) {
       return this.renderContentForChanges()

@@ -2923,11 +2923,24 @@ export class AppStore extends TypedBaseStore<IAppState> {
   public async _showWorkingDirectoryDiff(
     repository: Repository
   ): Promise<void> {
-    await this._changeRepositorySection(
-      repository,
-      RepositorySectionTab.Changes
-    )
-    await this._selectWorkingDirectoryFiles(repository)
+    this.setDiffLoading(repository, true)
+
+    try {
+      await this._changeRepositorySection(
+        repository,
+        RepositorySectionTab.Changes
+      )
+
+      const files =
+        this.repositoryStateCache.get(repository).changesState.workingDirectory
+          .files
+      await this._selectWorkingDirectoryFiles(
+        repository,
+        files.length > 0 ? [files[0]] : []
+      )
+    } finally {
+      this.setDiffLoading(repository, false)
+    }
   }
 
   /** This shouldn't be called directly. See `Dispatcher`. */
@@ -2935,25 +2948,40 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repository: Repository,
     commitish: string
   ): Promise<void> {
-    const gitStore = this.gitStoreCache.get(repository)
-    const commit = await gitStore.performFailableOperation(() =>
-      getCommit(repository, commitish)
-    )
+    this.setDiffLoading(repository, true)
 
-    if (commit == null) {
-      this.emitError(new Error(`Could not resolve '${commitish}' as a commit.`))
-      return
+    try {
+      const gitStore = this.gitStoreCache.get(repository)
+      const commit = await gitStore.performFailableOperation(() =>
+        getCommit(repository, commitish)
+      )
+
+      if (commit == null) {
+        this.emitError(
+          new Error(`Could not resolve '${commitish}' as a commit.`)
+        )
+        return
+      }
+
+      gitStore.commitLookup.set(commit.sha, commit)
+      this.repositoryStateCache.update(repository, () => ({
+        commitLookup: gitStore.commitLookup,
+        selectedSection: RepositorySectionTab.History,
+      }))
+      this.emitUpdate()
+
+      this._changeCommitSelection(repository, [commit.sha], true)
+      await this._loadChangedFilesForCurrentSelection(repository)
+    } finally {
+      this.setDiffLoading(repository, false)
     }
+  }
 
-    gitStore.commitLookup.set(commit.sha, commit)
+  private setDiffLoading(repository: Repository, isDiffLoading: boolean) {
     this.repositoryStateCache.update(repository, () => ({
-      commitLookup: gitStore.commitLookup,
-      selectedSection: RepositorySectionTab.History,
+      isDiffLoading,
     }))
     this.emitUpdate()
-
-    this._changeCommitSelection(repository, [commit.sha], true)
-    await this._loadChangedFilesForCurrentSelection(repository)
   }
 
   /**

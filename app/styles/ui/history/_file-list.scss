@@ -6,3 +6,33 @@
     border-right: var(--base-border);
   }
 }
+
+#repository-sidebar {
+  .history-files-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+
+    .file-list {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .file-list-header {
+      background: var(--box-alt-background-color);
+      border-bottom: 1px solid var(--box-border-color);
+      height: 30px;
+      line-height: 30px;
+      flex: 0 0 auto;
+      padding: 0 var(--spacing);
+      text-align: center;
+    }
+
+    .fill-window {
+      color: var(--text-secondary-color);
+      padding: var(--spacing);
+    }
+  }
+}

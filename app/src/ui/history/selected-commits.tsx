@@ -87,6 +87,9 @@ interface ISelectedCommitsProps {
   /** Whether or not to show the drag overlay */
   readonly showDragOverlay: boolean
 
+  /** Whether to render the selected commit file list next to the diff. */
+  readonly showFileList: boolean
+
   /** Whether or not the selection of commits is contiguous */
   readonly isContiguous: boolean
 
@@ -306,22 +309,24 @@ export class SelectedCommits extends React.Component<
     }
 
     const className = this.state.isExpanded ? 'expanded' : 'collapsed'
-    const { commitSummaryWidth } = this.props
+    const { commitSummaryWidth, showFileList } = this.props
 
     return (
       <div id="history" className={className}>
         {this.renderCommitSummary(selectedCommits)}
         <div className="commit-details">
-          <Resizable
-            width={commitSummaryWidth.value}
-            minimumWidth={commitSummaryWidth.min}
-            maximumWidth={commitSummaryWidth.max}
-            onResize={this.onCommitSummaryResize}
-            onReset={this.onCommitSummaryReset}
-            description="Selected commit file list"
-          >
-            {this.renderFileList()}
-          </Resizable>
+          {showFileList ? (
+            <Resizable
+              width={commitSummaryWidth.value}
+              minimumWidth={commitSummaryWidth.min}
+              maximumWidth={commitSummaryWidth.max}
+              onResize={this.onCommitSummaryResize}
+              onReset={this.onCommitSummaryReset}
+              description="Selected commit file list"
+            >
+              {this.renderFileList()}
+            </Resizable>
+          ) : null}
           {this.renderDiff()}
         </div>
         {this.renderDragOverlay()}
