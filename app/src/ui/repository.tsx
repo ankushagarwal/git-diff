@@ -7,7 +7,7 @@ import { Changes, ChangesSidebar } from './changes'
 import { NoChanges } from './changes/no-changes'
 import { MultipleSelection } from './changes/multiple-selection'
 import { FilesChangedBadge } from './changes/files-changed-badge'
-import { SelectedCommits, CompareSidebar } from './history'
+import { SelectedCommits } from './history'
 import { Resizable } from './resizable'
 import { TabBar } from './tab-bar'
 import {
@@ -145,12 +145,6 @@ interface IRepositoryViewProps {
 
 interface IRepositoryViewState {
   readonly changesListScrollTop: number
-  readonly compareListScrollTop: number
-}
-
-const enum Tab {
-  Changes = 0,
-  History = 1,
 }
 
 export class RepositoryView extends React.Component<
@@ -160,14 +154,8 @@ export class RepositoryView extends React.Component<
   private previousSection: RepositorySectionTab =
     this.props.state.selectedSection
 
-  // Flag to force the app to use the scroll position in the state the next time
-  // the Compare list is rendered.
-  private forceCompareListScrollTop: boolean = false
-
   private readonly changesSidebarRef = React.createRef<ChangesSidebar>()
-  private readonly compareSidebarRef = React.createRef<CompareSidebar>()
 
-  private focusHistoryNeeded: boolean = false
   private focusChangesNeeded: boolean = false
 
   public constructor(props: IRepositoryViewProps) {
@@ -175,32 +163,15 @@ export class RepositoryView extends React.Component<
 
     this.state = {
       changesListScrollTop: 0,
-      compareListScrollTop: 0,
     }
-  }
-
-  public setFocusHistoryNeeded(): void {
-    this.focusHistoryNeeded = true
   }
 
   public setFocusChangesNeeded(): void {
     this.focusChangesNeeded = true
   }
 
-  public scrollCompareListToTop(): void {
-    this.forceCompareListScrollTop = true
-
-    this.setState({
-      compareListScrollTop: 0,
-    })
-  }
-
   private onChangesListScrolled = (scrollTop: number) => {
     this.setState({ changesListScrollTop: scrollTop })
-  }
-
-  private onCompareListScrolled = (scrollTop: number) => {
-    this.setState({ compareListScrollTop: scrollTop })
   }
 
   private renderChangesBadge(): JSX.Element | null {
@@ -215,21 +186,12 @@ export class RepositoryView extends React.Component<
   }
 
   private renderTabs(): JSX.Element {
-    const selectedTab =
-      this.props.state.selectedSection === RepositorySectionTab.Changes
-        ? Tab.Changes
-        : Tab.History
-
     return (
-      <TabBar selectedIndex={selectedTab} onTabClicked={this.onTabClicked}>
+      <TabBar selectedIndex={0} onTabClicked={this.onTabClicked}>
         <span className="with-indicator" id="changes-tab">
           <span>Changes</span>
           {this.renderChangesBadge()}
         </span>
-
-        <div className="with-indicator" id="history-tab">
-          <span>History</span>
-        </div>
       </TabBar>
     )
   }
@@ -324,63 +286,14 @@ export class RepositoryView extends React.Component<
         signOffCommits={this.props.signOffCommits}
         allowEmptyCommit={this.props.allowEmptyCommit}
         onUpdateCommitOptions={this.props.onUpdateCommitOptions}
+        showCommitControls={false}
       />
     )
   }
 
-  private renderCompareSidebar(): JSX.Element {
-    const { repository, dispatcher, state, aheadBehindStore, emoji } =
-      this.props
-    const {
-      remote,
-      compareState,
-      branchesState,
-      commitSelection: { shas },
-      commitLookup,
-      localCommitSHAs,
-      localTags,
-      tagsToPush,
-      multiCommitOperationState: mcos,
-    } = state
-    const { tip } = branchesState
-    const currentBranch = tip.kind === TipState.Valid ? tip.branch : null
-    const scrollTop =
-      this.forceCompareListScrollTop ||
-      this.previousSection === RepositorySectionTab.Changes
-        ? this.state.compareListScrollTop
-        : undefined
-    this.previousSection = RepositorySectionTab.History
-    this.forceCompareListScrollTop = false
-
+  private renderHiddenHistorySidebar(): JSX.Element {
     return (
-      <CompareSidebar
-        ref={this.compareSidebarRef}
-        repository={repository}
-        isLocalRepository={remote === null}
-        compareState={compareState}
-        selectedCommitShas={shas}
-        shasToHighlight={compareState.shasToHighlight}
-        currentBranch={currentBranch}
-        emoji={emoji}
-        commitLookup={commitLookup}
-        localCommitSHAs={localCommitSHAs}
-        localTags={localTags}
-        dispatcher={dispatcher}
-        onRevertCommit={this.onRevertCommit}
-        onAmendCommit={this.onAmendCommit}
-        onViewCommitOnGitHub={this.props.onViewCommitOnGitHub}
-        onCompareListScrolled={this.onCompareListScrolled}
-        onCherryPick={this.props.onCherryPick}
-        compareListScrollTop={scrollTop}
-        tagsToPush={tagsToPush}
-        aheadBehindStore={aheadBehindStore}
-        isMultiCommitOperationInProgress={mcos !== null}
-        askForConfirmationOnCheckoutCommit={
-          this.props.askForConfirmationOnCheckoutCommit
-        }
-        accounts={this.props.accounts}
-        preferAbsoluteDates={this.props.preferAbsoluteDates}
-      />
+      <div className="panel" role="tabpanel" aria-labelledby="changes-tab" />
     )
   }
 
@@ -390,7 +303,7 @@ export class RepositoryView extends React.Component<
     if (selectedSection === RepositorySectionTab.Changes) {
       return this.renderChangesSidebar()
     } else if (selectedSection === RepositorySectionTab.History) {
-      return this.renderCompareSidebar()
+      return this.renderHiddenHistorySidebar()
     } else {
       return assertNever(selectedSection, 'Unknown repository section')
     }
@@ -480,7 +393,7 @@ export class RepositoryView extends React.Component<
     const { changesetData, file, diff, shas, shasInDiff, isContiguous } =
       commitSelection
 
-    const selectedCommits = []
+    const selectedCommits = new Array<Commit>()
     for (const sha of shas) {
       const commit = commitLookup.get(sha)
       if (commit !== undefined) {
@@ -652,18 +565,6 @@ export class RepositoryView extends React.Component<
     )
   }
 
-  private onRevertCommit = (commit: Commit) => {
-    this.props.dispatcher.revertCommit(this.props.repository, commit)
-  }
-
-  private onAmendCommit = (commit: Commit, isLocalCommit: boolean) => {
-    this.props.dispatcher.startAmendingRepository(
-      this.props.repository,
-      commit,
-      isLocalCommit
-    )
-  }
-
   public componentDidMount() {
     window.addEventListener('keydown', this.onGlobalKeyDown)
   }
@@ -676,11 +577,6 @@ export class RepositoryView extends React.Component<
     if (this.focusChangesNeeded) {
       this.focusChangesNeeded = false
       this.changesSidebarRef.current?.focus()
-    }
-
-    if (this.focusHistoryNeeded) {
-      this.focusHistoryNeeded = false
-      this.compareSidebarRef.current?.focusHistory()
     }
   }
 
@@ -697,38 +593,23 @@ export class RepositoryView extends React.Component<
     // about the shift key here, we can get away with that as long
     // as there's only two tabs.
     if (event.ctrlKey && event.key === 'Tab') {
-      this.changeTab()
+      this.showChanges()
       event.preventDefault()
     }
   }
 
-  private changeTab() {
-    const section =
-      this.props.state.selectedSection === RepositorySectionTab.History
-        ? RepositorySectionTab.Changes
-        : RepositorySectionTab.History
-
+  private showChanges() {
     this.props.dispatcher.changeRepositorySection(
       this.props.repository,
-      section
+      RepositorySectionTab.Changes
     )
   }
 
-  private onTabClicked = (tab: Tab) => {
-    const section =
-      tab === Tab.History
-        ? RepositorySectionTab.History
-        : RepositorySectionTab.Changes
-
+  private onTabClicked = () => {
     this.props.dispatcher.changeRepositorySection(
       this.props.repository,
-      section
+      RepositorySectionTab.Changes
     )
-    if (!!section) {
-      this.props.dispatcher.updateCompareForm(this.props.repository, {
-        showBranchList: false,
-      })
-    }
   }
 
   private maybeRenderTutorialPanel(): JSX.Element | null {

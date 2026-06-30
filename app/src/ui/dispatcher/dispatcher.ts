@@ -2094,7 +2094,48 @@ export class Dispatcher {
       }
 
       await this.showPopup({ type: PopupType.AddRepository, path })
+    } else if (action.kind === 'show-diff') {
+      const repository = await this.openRepositoryForDiff(action.path)
+      if (repository === null) {
+        return
+      }
+
+      if (action.commitish !== undefined) {
+        await this.appStore._showCommitishDiff(repository, action.commitish)
+      } else {
+        await this.appStore._showWorkingDirectoryDiff(repository)
+      }
     }
+  }
+
+  private async openRepositoryForDiff(
+    path: string
+  ): Promise<Repository | null> {
+    const resolvedPath = await getRepositoryType(path)
+      .then(t => (t.kind === 'regular' ? t.topLevelWorkingDirectory : path))
+      .catch(e => {
+        log.error('Could not determine repository type', e)
+        return path
+      })
+
+    const { repositories } = this.appStore.getState()
+    const existingRepository = matchExistingRepository(
+      repositories,
+      resolvedPath
+    )
+
+    if (existingRepository) {
+      return this.selectRepository(existingRepository)
+    }
+
+    const addedRepositories = await this.addRepositories([resolvedPath])
+    if (addedRepositories.length < 1) {
+      return null
+    }
+
+    const repository = addedRepositories[0]
+    await this.selectRepository(repository)
+    return repository
   }
 
   public async dispatchURLAction(action: URLActionType): Promise<void> {

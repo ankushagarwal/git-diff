@@ -120,6 +120,8 @@ interface IChangesSidebarProps {
     repository: Repository,
     options: Partial<CommitOptions>
   ) => void
+
+  readonly showCommitControls: boolean
 }
 
 export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
@@ -378,6 +380,10 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
   private renderUndoCommit = (
     rebaseConflictState: RebaseConflictState | null
   ): JSX.Element | null => {
+    if (!this.props.showCommitControls) {
+      return null
+    }
+
     if (rebaseConflictState !== null) {
       return null
     }
@@ -482,6 +488,7 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
           signOffCommits={this.props.signOffCommits}
           allowEmptyCommit={this.props.allowEmptyCommit}
           onUpdateCommitOptions={this.props.onUpdateCommitOptions}
+          showCommitControls={this.props.showCommitControls}
         />
         {this.renderUndoCommit(rebaseConflictState)}
       </div>

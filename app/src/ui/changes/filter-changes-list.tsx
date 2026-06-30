@@ -248,6 +248,8 @@ interface IFilterChangesListProps {
     repository: Repository,
     options: Partial<CommitOptions>
   ) => void
+
+  readonly showCommitControls: boolean
 }
 
 interface IFilterChangesListState {
@@ -1386,7 +1388,7 @@ export class FilterChangesList extends React.Component<
         </div>
         {this.renderStashedChanges()}
         {this.renderHiddenChangesWarning()}
-        {this.renderCommitMessageForm()}
+        {this.props.showCommitControls ? this.renderCommitMessageForm() : null}
       </>
     )
   }

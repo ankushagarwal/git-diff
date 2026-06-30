@@ -1,7 +1,7 @@
 {
   "name": "desktop",
-  "productName": "GitHub Desktop",
-  "bundleID": "com.github.GitHubClient",
+  "productName": "GitDiff",
+  "bundleID": "com.github.GitDiff",
   "companyName": "GitHub, Inc.",
   "version": "3.6.2-beta1",
   "main": "./main.js",
@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://github.com/desktop/desktop.git"
   },
-  "description": "Simple collaboration from your desktop",
+  "description": "A focused desktop diff viewer for Git repositories",
   "author": {
     "name": "GitHub, Inc.",
     "email": "opensource+desktop@github.com",

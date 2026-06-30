@@ -50,7 +50,7 @@ import { DeleteBranch, DeleteRemoteBranch } from './delete-branch'
 import { CloningRepositoryView } from './cloning-repository'
 import {
   Toolbar,
-  ToolbarDropdown,
+  ToolbarButton,
   DropdownState,
   PushPullButton,
   BranchDropdown,
@@ -882,30 +882,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     shouldFocusHistory: boolean,
     showBranchList: boolean = false
   ) {
-    const state = this.state.selectedState
-    if (state == null || state.type !== SelectionType.Repository) {
-      return
-    }
-
-    await this.props.dispatcher.closeCurrentFoldout()
-
-    await this.props.dispatcher.initializeCompare(state.repository, {
-      kind: HistoryTabMode.History,
-    })
-
-    await this.props.dispatcher.changeRepositorySection(
-      state.repository,
-      RepositorySectionTab.History
-    )
-
-    await this.props.dispatcher.updateCompareForm(state.repository, {
-      filterText: '',
-      showBranchList,
-    })
-
-    if (shouldFocusHistory) {
-      this.repositoryViewRef.current?.setFocusHistoryNeeded()
-    }
+    return
   }
 
   private async showChanges(shouldFocusChanges: boolean) {
@@ -927,16 +904,7 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private chooseRepository() {
-    if (
-      this.state.currentFoldout &&
-      this.state.currentFoldout.type === FoldoutType.Repository
-    ) {
-      return this.props.dispatcher.closeFoldout(FoldoutType.Repository)
-    }
-
-    return this.props.dispatcher.showFoldout({
-      type: FoldoutType.Repository,
-    })
+    return
   }
 
   private showBranches() {
@@ -3068,10 +3036,7 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private onBranchCreatedFromCommit = () => {
-    const repositoryView = this.repositoryViewRef.current
-    if (repositoryView !== null) {
-      repositoryView.scrollCompareListToTop()
-    }
+    return
   }
 
   private onOpenShellIgnoreWarning = (path: string) => {
@@ -3205,7 +3170,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     )
   }
 
-  private renderRepositoryList = (): JSX.Element => {
+  public renderRepositoryList = (): JSX.Element => {
     const selectedRepository = this.state.selectedState
       ? this.state.selectedState.repository
       : null
@@ -3308,11 +3273,7 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private onRepositoryDropdownStateChanged = (newState: DropdownState) => {
-    if (newState === 'open') {
-      this.props.dispatcher.showFoldout({ type: FoldoutType.Repository })
-    } else {
-      this.props.dispatcher.closeFoldout(FoldoutType.Repository)
-    }
+    return
   }
 
   private onExitTutorial = () => {
@@ -3350,42 +3311,15 @@ export class App extends React.Component<IAppProps, IAppState> {
       title = __DARWIN__ ? 'No Repositories' : 'No repositories'
     }
 
-    const isOpen =
-      this.state.currentFoldout &&
-      this.state.currentFoldout.type === FoldoutType.Repository
-
-    const currentState: DropdownState = isOpen ? 'open' : 'closed'
-
-    const tooltip = repository && !isOpen ? repository.path : undefined
-
-    const foldoutWidth = clamp(this.state.sidebarWidth)
-
-    const foldoutStyle: React.CSSProperties = {
-      position: 'absolute',
-      marginLeft: 0,
-      width: foldoutWidth,
-      minWidth: foldoutWidth,
-      height: '100%',
-      top: 0,
-    }
-
-    /** The dropdown focus trap will stop focus event propagation we made need
-     * in some of our dialogs (noticed with Lists). Disabled this when dialogs
-     * are open */
-    const enableFocusTrap = this.state.currentPopup === null
+    const tooltip = repository ? repository.path : undefined
 
     return (
-      <ToolbarDropdown
+      <ToolbarButton
         icon={icon}
         title={title}
         description={__DARWIN__ ? 'Current Repository' : 'Current repository'}
         tooltip={tooltip}
-        foldoutStyle={foldoutStyle}
         onContextMenu={this.onRepositoryToolbarButtonContextMenu}
-        onDropdownStateChanged={this.onRepositoryDropdownStateChanged}
-        dropdownContentRenderer={this.renderRepositoryList}
-        dropdownState={currentState}
-        enableFocusTrap={enableFocusTrap}
       />
     )
   }
@@ -3440,7 +3374,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     showContextualMenu(items)
   }
 
-  private renderPushPullToolbarButton() {
+  public renderPushPullToolbarButton() {
     const selection = this.state.selectedState
     if (!selection || selection.type !== SelectionType.Repository) {
       return null
@@ -3577,7 +3511,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     this.props.dispatcher.openCreatePullRequestInBrowser(repository, branch)
   }
 
-  private onPushPullDropdownStateChanged = (newState: DropdownState) => {
+  public onPushPullDropdownStateChanged = (newState: DropdownState) => {
     if (newState === 'open') {
       this.props.dispatcher.showFoldout({ type: FoldoutType.PushPull })
     } else {
@@ -3585,7 +3519,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
   }
 
-  private onBranchDropdownStateChanged = (newState: DropdownState) => {
+  public onBranchDropdownStateChanged = (newState: DropdownState) => {
     if (newState === 'open') {
       this.props.dispatcher.showFoldout({ type: FoldoutType.Branch })
     } else {
@@ -3593,7 +3527,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
   }
 
-  private onWorktreeDropdownStateChanged = (newState: DropdownState) => {
+  public onWorktreeDropdownStateChanged = (newState: DropdownState) => {
     if (newState === 'open') {
       this.props.dispatcher.showFoldout({ type: FoldoutType.Worktree })
     } else {
@@ -3601,7 +3535,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
   }
 
-  private renderBranchToolbarButton(): JSX.Element | null {
+  public renderBranchToolbarButton(): JSX.Element | null {
     const selection = this.state.selectedState
 
     if (selection == null || selection.type !== SelectionType.Repository) {
@@ -3644,7 +3578,7 @@ export class App extends React.Component<IAppProps, IAppState> {
     )
   }
 
-  private renderWorktreeToolbarButton(): JSX.Element | null {
+  public renderWorktreeToolbarButton(): JSX.Element | null {
     if (!enableWorktreeSupport()) {
       return null
     }
@@ -3762,9 +3696,6 @@ export class App extends React.Component<IAppProps, IAppState> {
         <div className="sidebar-section" style={{ width }}>
           {this.renderRepositoryToolbarButton()}
         </div>
-        {this.renderWorktreeToolbarButton()}
-        {this.renderBranchToolbarButton()}
-        {this.renderPushPullToolbarButton()}
       </Toolbar>
     )
   }

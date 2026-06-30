@@ -1126,9 +1126,11 @@ export class GitStore extends BaseStore {
     }
   }
 
-  public async loadStatus(): Promise<IStatusResult | null> {
+  public async loadStatus(
+    includeUntracked: boolean = false
+  ): Promise<IStatusResult | null> {
     const status = await this.performFailableOperation(() =>
-      getStatus(this.repository)
+      getStatus(this.repository, includeUntracked)
     )
 
     if (!status) {

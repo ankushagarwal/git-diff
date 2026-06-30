@@ -251,7 +251,7 @@ import {
   Shell,
 } from '../shells'
 import { ILaunchStats, StatsStore } from '../stats'
-import { hasShownWelcomeFlow, markWelcomeFlowComplete } from '../welcome'
+import { markWelcomeFlowComplete } from '../welcome'
 import { WindowState } from '../window-state'
 import { TypedBaseStore } from './base-store'
 import { MergeTreeResult } from '../../models/merge'
@@ -450,7 +450,7 @@ const worktreeDropdownWidthConfigKey: string = 'worktree-dropdown-width'
 const defaultPushPullButtonWidth: number = 230
 const pushPullButtonWidthConfigKey: string = 'push-pull-button-width'
 
-const askToMoveToApplicationsFolderDefault: boolean = true
+const askToMoveToApplicationsFolderDefault: boolean = false
 const confirmRepoRemovalDefault: boolean = true
 const showCommitLengthWarningDefault: boolean = false
 const confirmDiscardChangesDefault: boolean = true
@@ -736,7 +736,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
   ) {
     super()
 
-    this.showWelcomeFlow = !hasShownWelcomeFlow()
+    this.showWelcomeFlow = false
 
     if (__WIN32__) {
       const useWindowsOpenSSH = getBoolean(UseWindowsOpenSSHKey)
@@ -2378,10 +2378,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     // TODO: Initiliaze here for now... maybe move to dialog mounting
     this.updatePullRequestResizableConstraints()
 
-    this.askToMoveToApplicationsFolderSetting = getBoolean(
-      askToMoveToApplicationsFolderKey,
+    this.askToMoveToApplicationsFolderSetting =
       askToMoveToApplicationsFolderDefault
-    )
 
     this.useExternalCredentialHelper = useExternalCredentialHelper()
 
@@ -2919,6 +2917,43 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.updateChangesWorkingDirectoryDiff(repository)
 
     return status
+  }
+
+  /** This shouldn't be called directly. See `Dispatcher`. */
+  public async _showWorkingDirectoryDiff(
+    repository: Repository
+  ): Promise<void> {
+    await this._changeRepositorySection(
+      repository,
+      RepositorySectionTab.Changes
+    )
+    await this._selectWorkingDirectoryFiles(repository)
+  }
+
+  /** This shouldn't be called directly. See `Dispatcher`. */
+  public async _showCommitishDiff(
+    repository: Repository,
+    commitish: string
+  ): Promise<void> {
+    const gitStore = this.gitStoreCache.get(repository)
+    const commit = await gitStore.performFailableOperation(() =>
+      getCommit(repository, commitish)
+    )
+
+    if (commit == null) {
+      this.emitError(new Error(`Could not resolve '${commitish}' as a commit.`))
+      return
+    }
+
+    gitStore.commitLookup.set(commit.sha, commit)
+    this.repositoryStateCache.update(repository, () => ({
+      commitLookup: gitStore.commitLookup,
+      selectedSection: RepositorySectionTab.History,
+    }))
+    this.emitUpdate()
+
+    this._changeCommitSelection(repository, [commit.sha], true)
+    await this._loadChangedFilesForCurrentSelection(repository)
   }
 
   /**

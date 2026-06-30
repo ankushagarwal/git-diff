@@ -8,3 +8,8 @@ export type CLIAction =
       readonly url: string
       readonly branch?: string
     }
+  | {
+      readonly kind: 'show-diff'
+      readonly path: string
+      readonly commitish?: string
+    }

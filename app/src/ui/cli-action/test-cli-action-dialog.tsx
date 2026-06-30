@@ -9,7 +9,11 @@ import { CLIAction } from '../../lib/cli-action'
 import { assertNever } from '../../lib/fatal-error'
 
 /** The CLI action kinds available to dispatch, in tab order. */
-const tabs: ReadonlyArray<CLIAction['kind']> = ['open-repository', 'clone-url']
+const tabs: ReadonlyArray<CLIAction['kind']> = [
+  'open-repository',
+  'clone-url',
+  'show-diff',
+]
 
 interface ITestCLIActionDialogProps {
   readonly dispatcher: Dispatcher
@@ -33,6 +37,9 @@ interface ITestCLIActionDialogState {
 
   /** The optional branch for the 'clone-url' action. */
   readonly branch: string
+
+  /** The optional commit ref for the 'show-diff' action. */
+  readonly commitish: string
 }
 
 /**
@@ -53,6 +60,7 @@ export class TestCLIActionDialog extends React.Component<
       path: '',
       url: '',
       branch: '',
+      commitish: '',
     }
   }
 
@@ -70,6 +78,7 @@ export class TestCLIActionDialog extends React.Component<
         >
           <span>Open repository</span>
           <span>Clone URL</span>
+          <span>Show diff</span>
         </TabBar>
 
         <DialogContent>{this.renderActiveTab()}</DialogContent>
@@ -122,6 +131,28 @@ export class TestCLIActionDialog extends React.Component<
             </Row>
           </>
         )
+      case 'show-diff':
+        return (
+          <>
+            <Row>
+              <TextBox
+                label="Path"
+                placeholder="/path/to/repository"
+                value={this.state.path}
+                onValueChanged={this.onPathChanged}
+                autoFocus={true}
+              />
+            </Row>
+            <Row>
+              <TextBox
+                label="Ref (optional)"
+                placeholder="HEAD"
+                value={this.state.commitish}
+                onValueChanged={this.onCommitishChanged}
+              />
+            </Row>
+          </>
+        )
       default:
         return assertNever(kind, `Unknown CLI action kind: ${kind}`)
     }
@@ -141,6 +172,17 @@ export class TestCLIActionDialog extends React.Component<
         return url.length === 0
           ? null
           : { kind, url, branch: branch.length === 0 ? undefined : branch }
+      }
+      case 'show-diff': {
+        const path = this.state.path.trim()
+        const commitish = this.state.commitish.trim()
+        return path.length === 0
+          ? null
+          : {
+              kind,
+              path,
+              commitish: commitish.length === 0 ? undefined : commitish,
+            }
       }
       default:
         return assertNever(kind, `Unknown CLI action kind: ${kind}`)
@@ -165,6 +207,10 @@ export class TestCLIActionDialog extends React.Component<
 
   private onBranchChanged = (branch: string) => {
     this.setState({ branch })
+  }
+
+  private onCommitishChanged = (commitish: string) => {
+    this.setState({ commitish })
   }
 
   private onSubmit = async () => {
