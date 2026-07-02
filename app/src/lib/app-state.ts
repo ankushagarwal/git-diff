@@ -770,11 +770,25 @@ export interface ICommitSelection {
   /** The changeset data associated with the selected commit */
   readonly changesetData: IChangesetData
 
+  /** Branch merge-base comparison to use when rendering selected file diffs. */
+  readonly branchComparison: IBranchComparison | null
+
   /** The selected file inside the selected commit */
   readonly file: CommittedFileChange | null
 
   /** The diff of the currently-selected file */
   readonly diff: IDiff | null
+}
+
+export interface IBranchComparison {
+  /** The base branch to compare from. */
+  readonly baseBranchName: string
+
+  /** The branch whose changes are being displayed. */
+  readonly comparisonBranchName: string
+
+  /** The commit to use as the latest side of the displayed branch diff. */
+  readonly latestCommit: string
 }
 
 export enum ChangesSelectionKind {

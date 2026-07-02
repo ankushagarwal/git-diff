@@ -40,6 +40,7 @@ const usage = (exitCode = 1): never => {
   process.stderr.write(
     'GitDiff CLI usage: \n' +
       '  gitd          Show tracked working tree changes for the current repository\n' +
+      '  gitd branch   Show the current branch diff against the default branch\n' +
       '  gitd <ref>    Show the diff for a commit hash, branch, tag, or other commit ref\n'
   )
   process.exit(exitCode)
@@ -50,15 +51,17 @@ delete process.env.ELECTRON_RUN_AS_NODE
 if (args.help || args._.at(0) === 'help') {
   usage(0)
 } else {
-  const [commitish, extraArg] = args._
+  const [modeOrCommitish, extraArg] = args._
   if (extraArg !== undefined) {
     usage(1)
   }
 
   const path = resolve('.')
   const cliArgs = [`--cli-diff-repo=${path}`]
-  if (commitish !== undefined) {
-    cliArgs.push(`--cli-diff-ref=${commitish}`)
+  if (modeOrCommitish === 'branch') {
+    cliArgs.push('--cli-diff-mode=branch')
+  } else if (modeOrCommitish !== undefined) {
+    cliArgs.push(`--cli-diff-ref=${modeOrCommitish}`)
   }
 
   run(...cliArgs)

@@ -2100,10 +2100,21 @@ export class Dispatcher {
         return
       }
 
-      if (action.commitish !== undefined) {
-        await this.appStore._showCommitishDiff(repository, action.commitish)
-      } else {
-        await this.appStore._showWorkingDirectoryDiff(repository)
+      switch (action.target.kind) {
+        case 'working-directory':
+          await this.appStore._showWorkingDirectoryDiff(repository)
+          break
+        case 'commitish':
+          await this.appStore._showCommitishDiff(
+            repository,
+            action.target.commitish
+          )
+          break
+        case 'branch':
+          await this.appStore._showCurrentBranchDiff(repository)
+          break
+        default:
+          return assertNever(action.target, 'Unknown show-diff target')
       }
     }
   }

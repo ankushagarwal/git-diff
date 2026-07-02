@@ -1,3 +1,15 @@
+export type CLIShowDiffTarget =
+  | {
+      readonly kind: 'working-directory'
+    }
+  | {
+      readonly kind: 'commitish'
+      readonly commitish: string
+    }
+  | {
+      readonly kind: 'branch'
+    }
+
 export type CLIAction =
   | {
       readonly kind: 'open-repository'
@@ -11,5 +23,5 @@ export type CLIAction =
   | {
       readonly kind: 'show-diff'
       readonly path: string
-      readonly commitish?: string
+      readonly target: CLIShowDiffTarget
     }

@@ -50,6 +50,7 @@ import {
   DiffSelection,
   DiffSelectionType,
   DiffType,
+  IDiff,
   ImageDiffType,
   ITextDiff,
 } from '../../models/diff'
@@ -155,6 +156,7 @@ import {
   IConstrainedValue,
   ICompareState,
   CommitOptions,
+  IBranchComparison,
 } from '../app-state'
 import {
   findEditorOrDefault,
@@ -549,6 +551,21 @@ export const showChangesFilterKey = 'show-changes-filter'
 
 const selectedCopilotModelsKey = 'selected-copilot-models'
 export const showChangesFilterDefault = true
+
+function branchComparisonsEqual(
+  a: IBranchComparison | null,
+  b: IBranchComparison | null
+): boolean {
+  if (a === null || b === null) {
+    return a === b
+  }
+
+  return (
+    a.baseBranchName === b.baseBranchName &&
+    a.comparisonBranchName === b.comparisonBranchName &&
+    a.latestCommit === b.latestCommit
+  )
+}
 
 export class AppStore extends TypedBaseStore<IAppState> {
   private readonly gitStoreCache: GitStoreCache
@@ -1501,6 +1518,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       shas: [],
       file: null,
       changesetData: { files: [], linesAdded: 0, linesDeleted: 0 },
+      branchComparison: null,
       diff: null,
     }))
   }
@@ -1537,6 +1555,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       isContiguous,
       file: null,
       changesetData: { files: [], linesAdded: 0, linesDeleted: 0 },
+      branchComparison: null,
       diff: null,
     }))
 
@@ -1985,9 +2004,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.emitUpdate()
 
     const stateBeforeLoad = this.repositoryStateCache.get(repository)
-    const { shas, isContiguous } = stateBeforeLoad.commitSelection
+    const { shas, isContiguous, branchComparison } =
+      stateBeforeLoad.commitSelection
 
-    if (shas.length === 0) {
+    if (shas.length === 0 && branchComparison === null) {
       if (__DEV__) {
         throw new Error(
           "No currently selected sha yet we've been asked to switch file selection"
@@ -2001,27 +2021,40 @@ export class AppStore extends TypedBaseStore<IAppState> {
       return
     }
 
-    const diff =
-      shas.length > 1
-        ? await getCommitRangeDiff(
-            repository,
-            file,
-            this.orderShasByHistory(repository, shas),
-            this.hideWhitespaceInHistoryDiff
-          )
-        : await getCommitDiff(
-            repository,
-            file,
-            shas[0],
-            this.hideWhitespaceInHistoryDiff
-          )
+    let diff: IDiff
+    if (branchComparison !== null) {
+      diff = await getBranchMergeBaseDiff(
+        repository,
+        file,
+        branchComparison.baseBranchName,
+        branchComparison.comparisonBranchName,
+        this.hideWhitespaceInHistoryDiff,
+        branchComparison.latestCommit
+      )
+    } else if (shas.length > 1) {
+      diff = await getCommitRangeDiff(
+        repository,
+        file,
+        this.orderShasByHistory(repository, shas),
+        this.hideWhitespaceInHistoryDiff
+      )
+    } else {
+      diff = await getCommitDiff(
+        repository,
+        file,
+        shas[0],
+        this.hideWhitespaceInHistoryDiff
+      )
+    }
 
     const stateAfterLoad = this.repositoryStateCache.get(repository)
-    const { shas: shasAfter } = stateAfterLoad.commitSelection
+    const { shas: shasAfter, branchComparison: branchComparisonAfter } =
+      stateAfterLoad.commitSelection
     // A whole bunch of things could have happened since we initiated the diff load
     if (
       shasAfter.length !== shas.length ||
-      !shas.every((sha, i) => sha === shasAfter[i])
+      !shas.every((sha, i) => sha === shasAfter[i]) ||
+      !branchComparisonsEqual(branchComparison, branchComparisonAfter)
     ) {
       return
     }
@@ -2972,6 +3005,113 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
       this._changeCommitSelection(repository, [commit.sha], true)
       await this._loadChangedFilesForCurrentSelection(repository)
+    } finally {
+      this.setDiffLoading(repository, false)
+    }
+  }
+
+  /** This shouldn't be called directly. See `Dispatcher`. */
+  public async _showCurrentBranchDiff(repository: Repository): Promise<void> {
+    this.setDiffLoading(repository, true)
+
+    try {
+      await this._changeRepositorySection(
+        repository,
+        RepositorySectionTab.History
+      )
+
+      await this._refreshRepository(repository)
+
+      const { branchesState } = this.repositoryStateCache.get(repository)
+      const { tip } = branchesState
+      if (tip.kind !== TipState.Valid) {
+        this.clearSelectedCommit(repository)
+        this.emitUpdate()
+        this.emitError(
+          new Error(
+            'Cannot show a branch diff because HEAD is not on a branch.'
+          )
+        )
+        return
+      }
+
+      const currentBranch = tip.branch
+      const baseBranch = findContributionTargetDefaultBranch(
+        repository,
+        branchesState
+      )
+      if (baseBranch === null) {
+        this.clearSelectedCommit(repository)
+        this.emitUpdate()
+        this.emitError(
+          new Error(
+            `Could not determine a default branch to compare '${currentBranch.name}' against.`
+          )
+        )
+        return
+      }
+
+      const gitStore = this.gitStoreCache.get(repository)
+      const commits = await gitStore.getCommitsBetweenBranches(
+        baseBranch,
+        currentBranch
+      )
+      const commitSHAs = commits.map(c => c.sha)
+      const emptyChangeSet = { files: [], linesAdded: 0, linesDeleted: 0 }
+      const changesetData =
+        commitSHAs.length > 0
+          ? await gitStore.performFailableOperation(() =>
+              getBranchMergeBaseChangedFiles(
+                repository,
+                baseBranch.name,
+                currentBranch.name,
+                currentBranch.tip.sha
+              )
+            )
+          : emptyChangeSet
+
+      if (changesetData === undefined) {
+        return
+      }
+
+      if (changesetData === null) {
+        this.clearSelectedCommit(repository)
+        this.emitUpdate()
+        this.emitError(
+          new Error(
+            `Could not find a merge base between '${baseBranch.name}' and '${currentBranch.name}'.`
+          )
+        )
+        return
+      }
+
+      const branchComparison: IBranchComparison | null =
+        commitSHAs.length > 0
+          ? {
+              baseBranchName: baseBranch.name,
+              comparisonBranchName: currentBranch.name,
+              latestCommit: currentBranch.tip.sha,
+            }
+          : null
+
+      this.repositoryStateCache.update(repository, () => ({
+        commitLookup: gitStore.commitLookup,
+        selectedSection: RepositorySectionTab.History,
+      }))
+      this.repositoryStateCache.updateCommitSelection(repository, () => ({
+        shas: commitSHAs,
+        shasInDiff: commitSHAs,
+        isContiguous: true,
+        changesetData,
+        branchComparison,
+        file: null,
+        diff: null,
+      }))
+      this.emitUpdate()
+
+      if (changesetData.files.length > 0) {
+        await this._changeFileSelection(repository, changesetData.files[0])
+      }
     } finally {
       this.setDiffLoading(repository, false)
     }
@@ -9705,6 +9845,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         shasInDiff: commitSHAs,
         isContiguous: true,
         changesetData: changesetData ?? emptyChangeSet,
+        branchComparison: null,
         file: null,
         diff: null,
       },

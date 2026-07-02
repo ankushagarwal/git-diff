@@ -285,10 +285,12 @@ async function handleCommandLineArguments(argv: string[]) {
     handleCLIAction({
       kind: 'show-diff',
       path: args['cli-diff-repo'],
-      commitish:
-        typeof args['cli-diff-ref'] === 'string'
-          ? args['cli-diff-ref']
-          : undefined,
+      target:
+        args['cli-diff-mode'] === 'branch'
+          ? { kind: 'branch' }
+          : typeof args['cli-diff-ref'] === 'string'
+          ? { kind: 'commitish', commitish: args['cli-diff-ref'] }
+          : { kind: 'working-directory' },
     })
   } else if (typeof args['cli-clone'] === 'string') {
     handleCLIAction({

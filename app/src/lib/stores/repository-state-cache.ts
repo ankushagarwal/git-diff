@@ -366,6 +366,7 @@ function getInitialRepositoryState(): IRepositoryState {
       isContiguous: true,
       file: null,
       changesetData: { files: [], linesAdded: 0, linesDeleted: 0 },
+      branchComparison: null,
       diff: null,
     },
     changesState: {

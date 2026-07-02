@@ -8,11 +8,14 @@ import { Row } from '../lib/row'
 import { CLIAction } from '../../lib/cli-action'
 import { assertNever } from '../../lib/fatal-error'
 
-/** The CLI action kinds available to dispatch, in tab order. */
-const tabs: ReadonlyArray<CLIAction['kind']> = [
+type CLIActionTab = CLIAction['kind'] | 'show-branch-diff'
+
+/** The CLI action tabs available to dispatch, in tab order. */
+const tabs: ReadonlyArray<CLIActionTab> = [
   'open-repository',
   'clone-url',
   'show-diff',
+  'show-branch-diff',
 ]
 
 interface ITestCLIActionDialogProps {
@@ -79,6 +82,7 @@ export class TestCLIActionDialog extends React.Component<
           <span>Open repository</span>
           <span>Clone URL</span>
           <span>Show diff</span>
+          <span>Show branch diff</span>
         </TabBar>
 
         <DialogContent>{this.renderActiveTab()}</DialogContent>
@@ -153,6 +157,18 @@ export class TestCLIActionDialog extends React.Component<
             </Row>
           </>
         )
+      case 'show-branch-diff':
+        return (
+          <Row>
+            <TextBox
+              label="Path"
+              placeholder="/path/to/repository"
+              value={this.state.path}
+              onValueChanged={this.onPathChanged}
+              autoFocus={true}
+            />
+          </Row>
+        )
       default:
         return assertNever(kind, `Unknown CLI action kind: ${kind}`)
     }
@@ -181,7 +197,20 @@ export class TestCLIActionDialog extends React.Component<
           : {
               kind,
               path,
-              commitish: commitish.length === 0 ? undefined : commitish,
+              target:
+                commitish.length === 0
+                  ? { kind: 'working-directory' }
+                  : { kind: 'commitish', commitish },
+            }
+      }
+      case 'show-branch-diff': {
+        const path = this.state.path.trim()
+        return path.length === 0
+          ? null
+          : {
+              kind: 'show-diff',
+              path,
+              target: { kind: 'branch' },
             }
       }
       default:
