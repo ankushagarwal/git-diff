@@ -99,29 +99,29 @@ function resolveVersionedPath(binPath: string, relativePath: string): string {
 function writeBatchScriptCLITrampoline(binPath: string): Promise<void> {
   const versionedPath = resolveVersionedPath(
     binPath,
-    'resources/app/static/gitd.bat'
+    'resources/app/static/gdd.bat'
   )
 
   const trampoline = `@echo off\n"%~dp0\\${versionedPath}" %*`
-  const trampolinePath = Path.join(binPath, 'gitd.bat')
+  const trampolinePath = Path.join(binPath, 'gdd.bat')
 
   return writeFile(trampolinePath, trampoline)
 }
 
 function writeShellScriptCLITrampoline(binPath: string): Promise<void> {
   // The path we get from `resolveVersionedPath` is a Win32 relative
-  // path (something like `..\app-2.5.0\resources\app\static\gitd.sh`).
+  // path (something like `..\app-2.5.0\resources\app\static\gdd.sh`).
   // We need to make sure it's a POSIX path in order for WSL to be able
   // to resolve it. See https://github.com/desktop/desktop/issues/4998
   const versionedPath = resolveVersionedPath(
     binPath,
-    'resources/app/static/gitd.sh'
+    'resources/app/static/gdd.sh'
   ).replace(/\\/g, '/')
 
   const trampoline = `#!/usr/bin/env bash
   DIR="$( cd "$( dirname "\$\{BASH_SOURCE[0]\}" )" && pwd )"
   sh "$DIR/${versionedPath}" "$@"`
-  const trampolinePath = Path.join(binPath, 'gitd')
+  const trampolinePath = Path.join(binPath, 'gdd')
 
   return writeFile(trampolinePath, trampoline, { encoding: 'utf8', mode: 755 })
 }

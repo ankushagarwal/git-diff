@@ -1761,7 +1761,15 @@ export class GitStore extends BaseStore {
     baseBranch: Branch,
     comparisonBranch: Branch
   ): Promise<ReadonlyArray<Commit>> {
-    const revisionRange = revRange(baseBranch.name, comparisonBranch.name)
+    return this.getCommitsBetweenRefs(baseBranch.name, comparisonBranch.name)
+  }
+
+  /** Returns commits reachable from comparisonRef but not from baseRef. */
+  public async getCommitsBetweenRefs(
+    baseRef: string,
+    comparisonRef: string
+  ): Promise<ReadonlyArray<Commit>> {
+    const revisionRange = revRange(baseRef, comparisonRef)
     const commits = await this.performFailableOperation(() =>
       getCommits(this.repository, revisionRange)
     )

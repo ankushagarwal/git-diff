@@ -39,9 +39,9 @@ const args = parse(process.argv.slice(2), {
 const usage = (exitCode = 1): never => {
   process.stderr.write(
     'GitDiff CLI usage: \n' +
-      '  gitd          Show tracked working tree changes for the current repository\n' +
-      '  gitd branch   Show the current branch diff against the default branch\n' +
-      '  gitd <ref>    Show the diff for a commit hash, branch, tag, or other commit ref\n'
+      '  gdd          Show tracked working tree changes for the current repository\n' +
+      '  gdd branch   Show the current branch diff against the default branch\n' +
+      '  gdd <ref>    Show the diff for a commit hash, branch, tag, or other commit ref\n'
   )
   process.exit(exitCode)
 }

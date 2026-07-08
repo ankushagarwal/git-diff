@@ -4,10 +4,10 @@ import * as fsAdmin from 'fs-admin'
 import { mkdir, readlink, symlink, unlink } from 'fs/promises'
 
 /** The path for the installed command line tool. */
-export const InstalledCLIPath = '/usr/local/bin/gitd'
+export const InstalledCLIPath = '/usr/local/bin/gdd'
 
 /** The path to the packaged CLI. */
-const PackagedPath = Path.resolve(__dirname, 'static', 'gitd.sh')
+const PackagedPath = Path.resolve(__dirname, 'static', 'gdd.sh')
 
 /** Install the command line tool on macOS. */
 export async function installCLI(): Promise<void> {

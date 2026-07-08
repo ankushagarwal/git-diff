@@ -372,7 +372,10 @@ import {
 import * as ipcRenderer from '../ipc-renderer'
 import { pathExists } from '../path-exists'
 import { offsetFromNow } from '../offset-from'
-import { findContributionTargetDefaultBranch } from '../branch'
+import {
+  findContributionTargetDefaultBranch,
+  getBranchComparisonBaseRef,
+} from '../branch'
 import { ValidNotificationPullRequestReview } from '../valid-notification-pull-request-review'
 import { determineMergeability } from '../git/merge-tree'
 import { PopupManager } from '../popup-manager'
@@ -3036,11 +3039,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
       }
 
       const currentBranch = tip.branch
-      const baseBranch = findContributionTargetDefaultBranch(
+      const defaultBranch = findContributionTargetDefaultBranch(
         repository,
         branchesState
       )
-      if (baseBranch === null) {
+      if (defaultBranch === null) {
         this.clearSelectedCommit(repository)
         this.emitUpdate()
         this.emitError(
@@ -3052,9 +3055,15 @@ export class AppStore extends TypedBaseStore<IAppState> {
       }
 
       const gitStore = this.gitStoreCache.get(repository)
-      const commits = await gitStore.getCommitsBetweenBranches(
-        baseBranch,
-        currentBranch
+      const baseRef = getBranchComparisonBaseRef(
+        defaultBranch,
+        gitStore.defaultRemote?.name
+      )
+
+      const comparisonRef = 'HEAD'
+      const commits = await gitStore.getCommitsBetweenRefs(
+        baseRef,
+        comparisonRef
       )
       const commitSHAs = commits.map(c => c.sha)
       const emptyChangeSet = { files: [], linesAdded: 0, linesDeleted: 0 }
@@ -3063,8 +3072,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
           ? await gitStore.performFailableOperation(() =>
               getBranchMergeBaseChangedFiles(
                 repository,
-                baseBranch.name,
-                currentBranch.name,
+                baseRef,
+                comparisonRef,
                 currentBranch.tip.sha
               )
             )
@@ -3079,7 +3088,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
         this.emitUpdate()
         this.emitError(
           new Error(
-            `Could not find a merge base between '${baseBranch.name}' and '${currentBranch.name}'.`
+            `Could not find a merge base between '${baseRef}' and '${currentBranch.name}'.`
           )
         )
         return
@@ -3088,8 +3097,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
       const branchComparison: IBranchComparison | null =
         commitSHAs.length > 0
           ? {
-              baseBranchName: baseBranch.name,
-              comparisonBranchName: currentBranch.name,
+              baseBranchName: baseRef,
+              comparisonBranchName: comparisonRef,
               latestCommit: currentBranch.tip.sha,
             }
           : null

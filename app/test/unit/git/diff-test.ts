@@ -627,7 +627,7 @@ describe('git/diff', () => {
         If we did `git diff master feature`, we would see files changes
         from just A and B.
 
-        We are testing `git diff --merge-base master feature`, which will
+        We are testing `git diff --merge-base master HEAD`, which will
         display the diff of the resulting merge of `feature` into `master`.
         Thus, we will see changes from B only.
       */
@@ -635,7 +635,7 @@ describe('git/diff', () => {
       const changesetData = await getBranchMergeBaseChangedFiles(
         repository,
         'master',
-        'feature-branch',
+        'HEAD',
         'irrelevantToTest'
       )
 
@@ -712,7 +712,7 @@ describe('git/diff', () => {
         If we did `git diff master feature`, we would see both lines
         "bar" and "feature" added to foo.md
 
-        We are testing `git diff --merge-base master feature`, which will
+        We are testing `git diff --merge-base master HEAD`, which will
         display the diff of the resulting merge of `feature` into `master`.
         Thus, we will see changes from B only or the line "feature".
       */
@@ -721,7 +721,7 @@ describe('git/diff', () => {
         repository,
         new FileChange('foo.md', { kind: AppFileStatusKind.New }),
         'master',
-        'feature-branch',
+        'HEAD',
         false,
         'irrelevantToTest'
       )

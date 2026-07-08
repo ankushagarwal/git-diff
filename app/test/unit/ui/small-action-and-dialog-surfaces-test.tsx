@@ -74,7 +74,7 @@ describe('small action and dialog surfaces', () => {
     const okButton = screen.getByRole('button', { name: 'Ok', hidden: true })
 
     assert.ok(title)
-    assert.ok(screen.getByText('/usr/local/bin/gitd'))
+    assert.ok(screen.getByText('/usr/local/bin/gdd'))
 
     fireEvent.click(okButton)
 

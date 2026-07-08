@@ -1,4 +1,4 @@
-import { Branch } from '../models/branch'
+import { Branch, BranchType } from '../models/branch'
 import {
   isRepositoryWithGitHubRepository,
   Repository,
@@ -23,4 +23,25 @@ export function findContributionTargetDefaultBranch(
   return isRepositoryWithGitHubRepository(repository)
     ? upstreamDefaultBranch ?? defaultBranch
     : defaultBranch
+}
+
+/**
+ * Prefer the remote ref associated with a local comparison base. GitStore
+ * filters tracked remote branches out of its branch list, so callers must use
+ * the ref directly instead of trying to find a corresponding Branch object.
+ */
+export function getBranchComparisonBaseRef(
+  branch: Branch,
+  defaultRemoteName?: string
+): string {
+  if (branch.type === BranchType.Remote) {
+    return branch.name
+  }
+
+  return (
+    branch.upstream ??
+    (defaultRemoteName === undefined
+      ? branch.name
+      : `${defaultRemoteName}/${branch.name}`)
+  )
 }

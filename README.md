@@ -1,7 +1,7 @@
 # GitDiff
 
 GitDiff is a stripped-down fork of GitHub Desktop focused only on viewing Git
-diffs. It is intended to be launched from a terminal with the `gitd` CLI,
+diffs. It is intended to be launched from a terminal with the `gdd` CLI,
 usually from inside a Git repository.
 
 The app keeps the familiar GitHub Desktop diff viewer, but hides the product
@@ -15,10 +15,10 @@ areas that are not needed for this workflow:
 
 ## Usage
 
-Run `gitd` from inside a Git repository.
+Run `gdd` from inside a Git repository.
 
 ```sh
-gitd
+gdd
 ```
 
 This opens GitDiff and shows the tracked working tree diff for the current
@@ -27,9 +27,9 @@ repository. Untracked files are ignored.
 To show a specific commit or commit-like reference:
 
 ```sh
-gitd HEAD
-gitd 153d7d5313
-gitd main~2
+gdd HEAD
+gdd 153d7d5313
+gdd main~2
 ```
 
 This is equivalent to using `git show` for that commit/ref. If GitDiff is
@@ -79,31 +79,31 @@ You can verify the installed app bundle with:
 codesign --verify --deep --strict --verbose=2 /Applications/GitDiff.app
 ```
 
-## Symlink `gitd`
+## Symlink `gdd`
 
 The installed app contains the CLI wrapper at:
 
 ```sh
-/Applications/GitDiff.app/Contents/Resources/app/static/gitd.sh
+/Applications/GitDiff.app/Contents/Resources/app/static/gdd.sh
 ```
 
 For a system-wide command:
 
 ```sh
-sudo ln -sf /Applications/GitDiff.app/Contents/Resources/app/static/gitd.sh /usr/local/bin/gitd
+sudo ln -sf /Applications/GitDiff.app/Contents/Resources/app/static/gdd.sh /usr/local/bin/gdd
 ```
 
 For a user-local command:
 
 ```sh
 mkdir -p ~/.local/bin
-ln -sf /Applications/GitDiff.app/Contents/Resources/app/static/gitd.sh ~/.local/bin/gitd
+ln -sf /Applications/GitDiff.app/Contents/Resources/app/static/gdd.sh ~/.local/bin/gdd
 ```
 
 Make sure the chosen directory is on your `PATH`, then verify:
 
 ```sh
-gitd --help
+gdd --help
 ```
 
 ## Development
